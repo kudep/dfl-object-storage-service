@@ -17,14 +17,38 @@ TEACHER_ACCESS_KEY = os.getenv("TEACHER_ACCESS_KEY", "teacher")
 TEACHER_SECRET_KEY = os.getenv("TEACHER_SECRET_KEY", "teacher-secret-change-me")
 
 
-def _make_client(access_key: str, secret_key: str) -> boto3.client:
+def _make_client(access_key: str, secret_key: str, session_token: str = None) -> boto3.client:
     return boto3.client(
         "s3",
         endpoint_url=ENDPOINT,
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
+        aws_session_token=session_token,
         region_name="us-east-1",
     )
+
+
+def _make_sts_client(access_key: str, secret_key: str):
+    return boto3.client(
+        "sts",
+        endpoint_url=ENDPOINT,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name="us-east-1",
+    )
+
+
+def assume_role_with_policy(access_key: str, secret_key: str, policy: str, duration: int = 900):
+    """Call STS AssumeRole and return temporary S3 client."""
+    sts = _make_sts_client(access_key, secret_key)
+    response = sts.assume_role(
+        RoleArn="arn:aws:iam::0:role/unused",  # MinIO ignores this but requires it
+        RoleSessionName="test-session",
+        Policy=policy,
+        DurationSeconds=duration,
+    )
+    creds = response["Credentials"]
+    return _make_client(creds["AccessKeyId"], creds["SecretAccessKey"], creds["SessionToken"])
 
 
 @pytest.fixture()
