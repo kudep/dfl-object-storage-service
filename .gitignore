@@ -1,0 +1,19 @@
+# MinIO data
+data/**
+!data/minio/.gitkeep
+
+# Environment
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# uv
+uv.lock
+
+# IDE
+.idea/
+.vscode/

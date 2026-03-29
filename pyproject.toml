@@ -1,0 +1,11 @@
+[project]
+name = "dfl-object-storage-service"
+version = "0.1.0"
+description = "S3-compatible object storage service for video recording"
+requires-python = ">=3.10"
+
+[dependency-groups]
+test = [
+    "boto3>=1.34",
+    "pytest>=8.0",
+]
