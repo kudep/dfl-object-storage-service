@@ -1,0 +1,7 @@
+services:
+  minio:
+    volumes:
+      - minio_data:/data
+
+volumes:
+  minio_data:

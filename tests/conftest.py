@@ -11,10 +11,10 @@ ADMIN_ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "minioadmin")
 ADMIN_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
 
 RECORDER_ACCESS_KEY = os.getenv("RECORDER_ACCESS_KEY", "recorder")
-RECORDER_SECRET_KEY = os.getenv("RECORDER_SECRET_KEY", "recorder-secret-change-me")
+RECORDER_SECRET_KEY = os.getenv("RECORDER_SECRET_KEY", "recorder-secret")
 
 TEACHER_ACCESS_KEY = os.getenv("TEACHER_ACCESS_KEY", "teacher")
-TEACHER_SECRET_KEY = os.getenv("TEACHER_SECRET_KEY", "teacher-secret-change-me")
+TEACHER_SECRET_KEY = os.getenv("TEACHER_SECRET_KEY", "teacher-secret")
 
 
 def _make_client(access_key: str, secret_key: str, session_token: str = None) -> boto3.client:

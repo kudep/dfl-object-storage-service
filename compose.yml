@@ -6,12 +6,9 @@ services:
     ports:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
-    user: "${UID:-1000}:${GID:-1000}"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-    volumes:
-      - ./data/minio:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -37,4 +34,3 @@ services:
       TEACHER_SECRET_KEY: ${TEACHER_SECRET_KEY:-teacher-secret-change-me}
     volumes:
       - ./init/init-minio.sh:/init/init-minio.sh:ro
-

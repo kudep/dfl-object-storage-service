@@ -4,31 +4,43 @@ S3-совместимое объектное хранилище (MinIO) для �
 
 ## Быстрый старт
 
-```bash
-# Скопировать и настроить переменные окружения
-cp .env.example .env
+### Разработка
 
-# Поднять MinIO + автоматическая инициализация (бакет, пользователи, policies)
-docker compose up -d
+```bash
+# Docker volume, данные не на хосте, дефолтные credentials
+./scripts/dev.sh up -d
 ```
+
+### Деплой
+
+```bash
+# Создать и заполнить .env.deploy реальными credentials
+cp .env.deploy.example .env.deploy
+
+# Локальная папка ./data/minio, боевые credentials
+./scripts/deploy.sh up -d
+```
+
+Скрипты принимают любые аргументы `docker compose`: `up -d`, `down`, `logs -f`, `ps` и т.д.
 
 После запуска:
 - **S3 API:** `http://localhost:9000`
-- **Web-консоль:** `http://localhost:9001` (логин: значения из `.env`)
+- **Web-консоль:** `http://localhost:9001`
 
 ## Роли
 
-| Роль | Credentials (по умолчанию) | Возможности |
-|------|---------------------------|-------------|
-| **admin** | `minioadmin` / `minioadmin` | Полный доступ |
-| **recorder** | `recorder` / `recorder-secret-change-me` | Запись в бакет `videos` |
-| **teacher** | `teacher` / `teacher-secret-change-me` | Чтение из бакета `videos` |
+| Роль | Возможности |
+|------|-------------|
+| **admin** | Полный доступ |
+| **recorder** | Запись в бакет `videos` |
+| **teacher** | Чтение из бакета `videos` |
 
 ## Тесты
 
 ```bash
-# Требуется запущенный MinIO (docker compose up -d)
-uv run --group test pytest tests/ -v
+# Требуется запущенный MinIO
+./scripts/dev.sh up -d
+./scripts/test.sh -v
 ```
 
 ## Документация
@@ -39,9 +51,17 @@ uv run --group test pytest tests/ -v
 ## Структура
 
 ```
-docker-compose.yml     — MinIO server + init контейнер
-.env.example           — шаблон переменных окружения
+compose.yml            — базовая конфигурация MinIO + init
+compose.dev.yml        — override для разработки (docker volume)
+compose.deploy.yml     — override для деплоя (bind mount ./data/minio)
+.env.dev               — переменные для разработки (в git)
+.env.deploy.example    — шаблон переменных для деплоя (в git)
+.env.deploy            — боевые credentials (в .gitignore)
 pyproject.toml         — зависимости проекта (uv)
+scripts/
+  dev.sh               — запуск dev-окружения
+  deploy.sh            — запуск deploy-окружения
+  test.sh              — запуск тестов (credentials из .env.dev)
 init/
   init-minio.sh        — создание бакета, пользователей, policies
 tests/
