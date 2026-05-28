@@ -24,7 +24,7 @@ Credentials (access key / secret key) выдаются администрато�
 
 | Роль | Возможности |
 |------|-------------|
-| **recorder** | Запись объектов, multipart upload, листинг |
+| **recorder** | Запись объектов, multipart upload, листинг, проверка существования (HEAD) |
 | **teacher** | Чтение объектов, листинг |
 | **admin** | Полный доступ (root credentials) |
 
@@ -89,6 +89,27 @@ s3.put_object(
     Body=video_bytes,
 )
 ```
+
+#### Проверка существования перед загрузкой (recorder)
+
+```python
+from botocore.exceptions import ClientError
+
+def already_uploaded(key: str) -> bool:
+    try:
+        s3.head_object(Bucket="videos", Key=key)
+        return True
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            return False
+        raise
+
+key = "session-1/cam-01/segment_000001.ts"
+if not already_uploaded(key):
+    s3.upload_file("local_video.ts", "videos", key)
+```
+
+> `head_object` возвращает только метаданные (размер, ETag), без скачивания тела — это дёшево и удобно для идемпотентной дозагрузки сегментов после сбоя.
 
 #### Multipart upload для больших файлов (recorder)
 
@@ -382,6 +403,7 @@ s3.put_object(Bucket="videos", Key="session-2/cam-01/seg.ts", Body=data)
 - Используйте multipart upload для сегментов >8 MB
 - Реализуйте локальный буфер: если MinIO недоступен, копите сегменты локально и загружайте при восстановлении связи
 - Всегда завершайте или отменяйте multipart uploads — незавершённые загрузки занимают место
+- Перед загрузкой сегмента проверяйте его существование через `head_object` — это делает дозагрузку после сбоя идемпотентной (не перезаписывает уже загруженное)
 
 ### Для teacher
 

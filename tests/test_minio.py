@@ -32,12 +32,8 @@ class TestBucketExists:
 class TestRecorder:
     def test_put_object(self, recorder_client, bucket):
         recorder_client.put_object(Bucket=bucket, Key=TEST_KEY, Body=TEST_BODY)
-        # Recorder has no GetObject/HeadObject — verify via ListObjects
-        response = recorder_client.list_objects_v2(Bucket=bucket, Prefix=TEST_KEY)
-        objects = response.get("Contents", [])
-        assert len(objects) == 1
-        assert objects[0]["Key"] == TEST_KEY
-        assert objects[0]["Size"] == len(TEST_BODY)
+        head = recorder_client.head_object(Bucket=bucket, Key=TEST_KEY)
+        assert head["ContentLength"] == len(TEST_BODY)
 
     def test_multipart_upload(self, recorder_client, bucket):
         key = "test/session-1/cam-01/multipart.ts"
@@ -65,11 +61,8 @@ class TestRecorder:
                     ]
                 },
             )
-            # Recorder has no GetObject/HeadObject — verify via ListObjects
-            response = recorder_client.list_objects_v2(Bucket=bucket, Prefix=key)
-            objects = response.get("Contents", [])
-            assert len(objects) == 1
-            assert objects[0]["Size"] == len(part_data) + len(b"final-part")
+            head = recorder_client.head_object(Bucket=bucket, Key=key)
+            assert head["ContentLength"] == len(part_data) + len(b"final-part")
         except Exception:
             recorder_client.abort_multipart_upload(
                 Bucket=bucket, Key=key, UploadId=upload_id,
@@ -88,11 +81,15 @@ class TestRecorder:
             recorder_client.delete_object(Bucket=bucket, Key=TEST_KEY)
         assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
 
-    def test_cannot_read(self, recorder_client, admin_client, bucket):
-        admin_client.put_object(Bucket=bucket, Key=TEST_KEY, Body=TEST_BODY)
+    def test_head_object_existence_check(self, recorder_client, admin_client, bucket):
+        # Recorder can HEAD to check existence before uploading a segment.
         with pytest.raises(ClientError) as exc_info:
-            recorder_client.get_object(Bucket=bucket, Key=TEST_KEY)
-        assert exc_info.value.response["Error"]["Code"] == "AccessDenied"
+            recorder_client.head_object(Bucket=bucket, Key="test/__missing__/never.ts")
+        assert exc_info.value.response["Error"]["Code"] == "404"
+
+        admin_client.put_object(Bucket=bucket, Key=TEST_KEY, Body=TEST_BODY)
+        head = recorder_client.head_object(Bucket=bucket, Key=TEST_KEY)
+        assert head["ContentLength"] == len(TEST_BODY)
 
 
 # ─── Teacher ─────────────────────────────────────────────────────────
